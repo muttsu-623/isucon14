@@ -99,7 +99,7 @@ tasks:
   pprof-record:
     dir: webapp/go/
     cmds:
-      - go tool pprof http://localhost:6060/debug/pprof/profile?seconds=60
+      - go tool pprof http://localhost:6060/debug/pprof/profile?seconds=75
 
 # pprofで確認する
   pprof-check:
