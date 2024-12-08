@@ -1,0 +1,16 @@
+webapp/nodejs
+webapp/perl
+webapp/php
+webapp/python
+webapp/ruby
+webapp/rust
+.bundle/
+.cargo/
+.cache/
+.cpanm/
+.bash_history
+.bash_logout
+.gitconfig
+.lesshst
+.local.env
+.perl-cpm/
