@@ -1,0 +1,95 @@
+version: '3'
+
+vars:
+  NGINX_LOG: /var/log/nginx/access.log
+  DB_SLOW_LOG: /var/log/mysql/mysql-slow.log
+  SERVICE_BINARY_NAME: isuride
+  ALP_CONFIG_FILE: /home/isucon/tool-config/alp/config.yml
+
+tasks:
+  install-pt-query-digest:
+    cmds:
+      - mkdir -p ~/tools
+      - cd ~/tools && wget https://github.com/percona/percona-toolkit/archive/refs/tags/v3.6.0.tar.gz
+      - cd ~/tools && tar zxvf v3.6.0.tar.gz
+      - ~/tools/percona-toolkit-3.6.0/bin/pt-query-digest --version
+      - sudo install ~/tools/percona-toolkit-3.6.0/bin/pt-query-digest /usr/local/bin
+
+  install-unzip:
+    cmds:
+      - sudo apt update
+      - sudo apt install -y unzip
+    status:
+      - which unzip
+
+  install-alp:
+    deps: [install-unzip]
+    cmds:
+      - wget https://github.com/tkuchiki/alp/releases/download/v1.0.9/alp_linux_amd64.zip
+      - unzip alp_linux_amd64.zip
+      - sudo install alp /usr/local/bin/alp
+      - rm alp_linux_amd64.zip alp
+    status:
+      - test -f /usr/local/bin/alp
+
+  # ベンチマークを回す前に実行するログローテーションと再起動
+  bench:
+    cmds:
+      - task mv-logs
+      - task restart
+      - task build
+
+  restart:
+    dir: go/
+    cmds:
+      - sudo systemctl restart mysql
+      - sudo systemctl restart nginx
+
+  build:
+    dir: go/
+    cmds:
+      - LINUX_TARGET_ENV=GOOS=linux GOARCH=amd64 go build -o {{.SERVICE_BINARY_NAME}}
+
+  mv-logs:
+    vars:
+      TIMESTAMP:
+        sh: date "+%Y-%m-%dT%H:%M:%S"
+    cmds:
+      - mkdir -p ~/logs/{{.TIMESTAMP}}
+      - |
+        if [ -f {{.NGINX_LOG}} ]; then
+          sudo mv -f {{.NGINX_LOG}} ~/logs/nginx/{{.TIMESTAMP}}/
+        else
+          echo ""
+        fi
+      - |
+        if [ -f {{.DB_SLOW_LOG}} ]; then
+          sudo mv -f {{.DB_SLOW_LOG}} ~/logs/mysql/{{.TIMESTAMP}}/
+        else
+          echo ""
+        fi
+
+  slow-select:
+    cmds:
+      - sudo pt-query-digest {{.DB_SLOW_LOG}}  --filter '$event->{arg} =~ m/^select/i'
+
+  slow-except-long:
+    cmds:
+      - sudo pt-query-digest {{.DB_SLOW_LOG}}  --filter 'length($event->{arg}) <= 2000'
+
+
+  alp:
+    cmds:
+      - sudo alp ltsv --file={{.NGINX_LOG}} --config={{.ALP_CONFIG_FILE}}
+
+# pprofで記録する
+  pprof-record:
+    cmds:
+      - go tool pprof -http=:6060 http://localhost:6060/debug/pprof/profile
+
+# pprofで確認する
+  pprof-check:
+    cmds:
+      - latest=$(ls -rt pprof/ | tail -n 1)
+      - go tool pprof -http=localhost:8090 pprof/$latest
+
