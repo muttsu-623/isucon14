@@ -3,7 +3,9 @@ package main
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -659,13 +661,36 @@ type appGetNotificationResponseChairStats struct {
 }
 
 func appGetNotification(w http.ResponseWriter, r *http.Request) {
+	flusher, _ := w.(http.Flusher)
+
+	w.Header().Set("Content-Type", "text/event-stream")
+	w.Header().Set("X-Accel-Buffering", "no")
+	w.Header().Set("Cache-Control", "no-cache")
+	w.Header().Set("Connection", "keep-alive")
+
+	// 1秒おきにデータを流す
+	t := time.NewTicker(1 * time.Second)
+	defer t.Stop()
+	go func() {
+		for range t.C {
+			response := getUserNotification(w, r)
+			jsonData, _ := json.Marshal(response.Data)
+			fmt.Fprintf(w, "data: %s\n\n", string(jsonData))
+			fmt.Printf("data: %s\n\n", string(jsonData))
+			flusher.Flush()
+		}
+	}()
+	<-r.Context().Done()
+}
+
+func getUserNotification(w http.ResponseWriter, r *http.Request) *appGetNotificationResponse {
 	ctx := r.Context()
 	user := ctx.Value("user").(*User)
 
 	tx, err := db.Beginx()
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
-		return
+		return &appGetNotificationResponse{}
 	}
 	defer tx.Rollback()
 
@@ -675,10 +700,10 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusOK, &appGetNotificationResponse{
 				RetryAfterMs: 30,
 			})
-			return
+			return &appGetNotificationResponse{}
 		}
 		writeError(w, http.StatusInternalServerError, err)
-		return
+		return &appGetNotificationResponse{}
 	}
 
 	yetSentRideStatus := RideStatus{}
@@ -688,11 +713,11 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 			status, err = getLatestRideStatus(ctx, tx, ride.ID)
 			if err != nil {
 				writeError(w, http.StatusInternalServerError, err)
-				return
+				return &appGetNotificationResponse{}
 			}
 		} else {
 			writeError(w, http.StatusInternalServerError, err)
-			return
+			return &appGetNotificationResponse{}
 		}
 	} else {
 		status = yetSentRideStatus.Status
@@ -701,7 +726,7 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 	fare, err := calculateDiscountedFare(ctx, tx, user.ID, ride, ride.PickupLatitude, ride.PickupLongitude, ride.DestinationLatitude, ride.DestinationLongitude)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err)
-		return
+		return &appGetNotificationResponse{}
 	}
 
 	response := &appGetNotificationResponse{
@@ -727,13 +752,13 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 		chair := &Chair{}
 		if err := tx.GetContext(ctx, chair, `SELECT * FROM chairs WHERE id = ?`, ride.ChairID); err != nil {
 			writeError(w, http.StatusInternalServerError, err)
-			return
+			return &appGetNotificationResponse{}
 		}
 
 		stats, err := getChairStats(ctx, tx, chair.ID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
-			return
+			return &appGetNotificationResponse{}
 		}
 
 		response.Data.Chair = &appGetNotificationResponseChair{
@@ -748,16 +773,16 @@ func appGetNotification(w http.ResponseWriter, r *http.Request) {
 		_, err := tx.ExecContext(ctx, `UPDATE ride_statuses SET app_sent_at = CURRENT_TIMESTAMP(6) WHERE id = ?`, yetSentRideStatus.ID)
 		if err != nil {
 			writeError(w, http.StatusInternalServerError, err)
-			return
+			return &appGetNotificationResponse{}
 		}
 	}
 
 	if err := tx.Commit(); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
-		return
+		return &appGetNotificationResponse{}
 	}
 
-	writeJSON(w, http.StatusOK, response)
+	return response
 }
 
 func getChairStats(ctx context.Context, tx *sqlx.Tx, chairID string) (appGetNotificationResponseChairStats, error) {
