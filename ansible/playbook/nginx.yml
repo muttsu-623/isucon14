@@ -1,0 +1,21 @@
+- name: Nginx
+  become: true # rootに昇格して実行
+  hosts: all
+  tasks:
+    - name: Modify setting
+      ansible.builtin.copy:
+        src: ../files/nginx/nginx.conf
+        dest: /etc/nginx/nginx.conf
+        mode: "0644"
+        backup: true # dest に既存のファイルがあればバックアップを作成
+
+    - name: Remove access log
+      ansible.builtin.file:
+        path: /var/log/nginx/access.log
+        state: absent
+
+    - name: Reload
+      ansible.builtin.service:
+        name: nginx
+        state: reloaded
+        enabled: true

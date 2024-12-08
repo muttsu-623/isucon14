@@ -1,0 +1,39 @@
+- name: MySQL
+  become: true # rootに昇格して実行
+  hosts: isunarabe-01
+  tasks:
+    - name: Modify setting
+      ansible.builtin.copy:
+        src: ../files/mysql/mysqld.cnf
+        dest: /etc/mysql/mysql.conf.d/mysqld.cnf
+        mode: "0644"
+        backup: true # dest に既存のファイルがあればバックアップを作成
+
+    - name: Change file ownership /var/log/mysql/error.log
+      ansible.builtin.file:
+        path: /var/log/mysql/error.log
+        owner: mysql
+        group: adm
+        mode: "0644"
+
+    - name: Change file ownership /var/log/mysql/mysql-slow.log
+      ansible.builtin.file:
+        path: /var/log/mysql/mysql-slow.log
+        state: touch
+        owner: mysql
+        group: adm
+        mode: "0644"
+
+    - name: Empty the slow log file
+      ansible.builtin.copy:
+        content: ""
+        dest: /var/log/mysql/mysql-slow.log
+        owner: mysql
+        group: adm
+        mode: "0644"
+
+    - name: Restart
+      ansible.builtin.service:
+        name: mysql
+        state: restarted
+        enabled: true
