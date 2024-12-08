@@ -356,7 +356,7 @@ func appPostRides(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var rideCount int
-	if err := tx.GetContext(ctx, &rideCount, `SELECT COUNT(*) FROM rides WHERE user_id = ? `, user.ID); err != nil {
+	if err := tx.GetContext(ctx, &rideCount, `SELECT COUNT 1 FROM rides WHERE user_id = ? `, user.ID); err != nil {
 		writeError(w, http.StatusInternalServerError, err)
 		return
 	}
