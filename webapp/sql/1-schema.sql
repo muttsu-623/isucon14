@@ -134,7 +134,7 @@ CREATE TABLE rides
 ALTER TABLE rides ADD INDEX idx_user_id (user_id);
 ALTER TABLE rides ADD INDEX idx_user_ids_created_at (user_id, created_at);
 ALTER TABLE rides ADD INDEX idx_chair_id_created_at (chair_id, created_at);
-ALTER TABLE rides ADD INDEX idx_chair_id_updated_at (chair_id, updated_at);
+ALTER TABLE rides ADD INDEX idx_chair_id_updated_at (chair_id asc, updated_at desc);
 
 DROP TABLE IF EXISTS ride_statuses;
 CREATE TABLE ride_statuses
@@ -148,7 +148,7 @@ CREATE TABLE ride_statuses
   PRIMARY KEY (id)
 )
   COMMENT = 'ライドステータスの変更履歴テーブル';
-ALTER TABLE ride_statuses ADD INDEX idx_ride_statuses_ride_id_created_at (ride_id, created_at);
+ALTER TABLE ride_statuses ADD INDEX idx_ride_statuses_ride_id_created_at (ride_id asc, created_at desc);
 ALTER TABLE ride_statuses ADD INDEX idx_chair_sent_at (chair_sent_at);
 
 DROP TABLE IF EXISTS owners;
