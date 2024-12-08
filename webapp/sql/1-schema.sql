@@ -97,6 +97,8 @@ CREATE TABLE rides
 )
   COMMENT = 'ライド情報テーブル';
 ALTER TABLE rides ADD INDEX idx_chair_id (chair_id);
+ALTER TABLE rides ADD INDEX idx_created_at (created_at);
+ALTER TABLE rides ADD INDEX idx_updated_at (updated_at);
 
 DROP TABLE IF EXISTS ride_statuses;
 CREATE TABLE ride_statuses
