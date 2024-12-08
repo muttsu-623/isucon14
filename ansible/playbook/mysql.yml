@@ -1,6 +1,6 @@
 - name: MySQL
   become: true # rootに昇格して実行
-  hosts: isunarabe-01
+  hosts: all
   tasks:
     - name: Modify setting
       ansible.builtin.copy:
