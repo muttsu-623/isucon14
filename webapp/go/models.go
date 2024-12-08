@@ -27,6 +27,7 @@ type ChairLocation struct {
 	Latitude  int       `db:"latitude"`
 	Longitude int       `db:"longitude"`
 	CreatedAt time.Time `db:"created_at"`
+	Distance  *int      `db:"distance"`
 }
 
 type User struct {

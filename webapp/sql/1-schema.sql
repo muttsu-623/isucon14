@@ -46,11 +46,45 @@ CREATE TABLE chair_locations
   latitude   INTEGER     NOT NULL COMMENT '経度',
   longitude  INTEGER     NOT NULL COMMENT '緯度',
   created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) COMMENT '登録日時',
+  distance   INTEGER     NULL COMMENT '移動距離',
   PRIMARY KEY (id)
 )
   COMMENT = '椅子の現在位置情報テーブル';
 ALTER TABLE chair_locations ADD INDEX idx_chair_id (chair_id);
 ALTER TABLE chair_locations ADD INDEX idx_created_at (created_at);
+
+ALTER TABLE chair_locations ADD INDEX idx_chair_id_created_at (chair_id, created_at);
+
+-- Add triggers to calculate distance
+DELIMITER $$
+CREATE TRIGGER insert_distance BEFORE INSERT ON chair_locations
+FOR EACH ROW
+BEGIN
+    -- SET NEW.distance = ABS(NEW.latitude - LAG(NEW.latitude) OVER (PARTITION BY NEW.chair_id ORDER BY NEW.created_at)) +
+    --                    ABS(NEW.longitude - LAG(NEW.longitude) OVER (PARTITION BY NEW.chair_id ORDER BY NEW.created_at));
+  DECLARE prev_latitude FLOAT;
+  DECLARE prev_longitude FLOAT;
+
+  -- 前の行の値を取得
+  SELECT latitude, longitude
+  INTO prev_latitude, prev_longitude
+  FROM chair_locations
+  WHERE chair_id = NEW.chair_id
+    AND created_at < NEW.created_at
+  ORDER BY created_at DESC
+  LIMIT 1;
+
+  -- 距離を計算して設定
+  IF prev_latitude IS NOT NULL AND prev_longitude IS NOT NULL THEN
+      SET NEW.distance = ABS(NEW.latitude - prev_latitude) +
+                          ABS(NEW.longitude - prev_longitude);
+  ELSE
+      SET NEW.distance = NULL; -- 最初のデータ行の場合は距離を0に設定
+  END IF;
+END
+$$
+
+DELIMITER ;
 
 DROP TABLE IF EXISTS users;
 CREATE TABLE users
