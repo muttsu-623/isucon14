@@ -35,6 +35,8 @@ CREATE TABLE chairs
   PRIMARY KEY (id)
 )
   COMMENT = '椅子情報テーブル';
+ALTER TABLE chairs ADD INDEX idx_owner_id (owner_id);
+ALTER TABLE chairs ADD INDEX idx_is_active (is_active);
 
 DROP TABLE IF EXISTS chair_locations;
 CREATE TABLE chair_locations
