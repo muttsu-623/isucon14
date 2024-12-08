@@ -255,7 +255,7 @@ func chairGetNotification(w http.ResponseWriter, r *http.Request) {
 			},
 			Status: status,
 		},
-		RetryAfterMs: 2000,
+		RetryAfterMs: 500,
 	})
 }
 
