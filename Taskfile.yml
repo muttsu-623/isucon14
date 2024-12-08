@@ -58,13 +58,13 @@ tasks:
       - mkdir -p ~/logs/{{.TIMESTAMP}}
       - |
         if [ -f {{.NGINX_LOG}} ]; then
-          sudo mv -f {{.NGINX_LOG}} ~/logs/nginx/{{.TIMESTAMP}}/
+          sudo mv -f {{.NGINX_LOG}} ~/logs/{{.TIMESTAMP}}/
         else
           echo ""
         fi
       - |
         if [ -f {{.DB_SLOW_LOG}} ]; then
-          sudo mv -f {{.DB_SLOW_LOG}} ~/logs/mysql/{{.TIMESTAMP}}/
+          sudo mv -f {{.DB_SLOW_LOG}} ~/logs/{{.TIMESTAMP}}/
         else
           echo ""
         fi
