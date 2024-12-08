@@ -4,7 +4,8 @@ vars:
   NGINX_LOG: /var/log/nginx/access.log
   DB_SLOW_LOG: /var/log/mysql/mysql-slow.log
   SERVICE_BINARY_NAME: isuride
-  ALP_CONFIG_FILE: /home/isucon/tool-config/alp/config.yml
+  # Alp sort type. 他にavg, countなど.
+  SORT_TYPE: '{{.SORT_TYPE | default "max"}}'
 
 tasks:
   install-pt-query-digest:
@@ -79,7 +80,18 @@ tasks:
 
   alp:
     cmds:
-      - sudo alp ltsv --file={{.NGINX_LOG}} --config={{.ALP_CONFIG_FILE}}
+      - |
+        sudo cat /var/log/nginx/access.log | alp ltsv -m "\
+        /api/chair/rides/[0-9A-Z]+/status,\
+        /api/app/rides/[0-9A-Z]+/evaluation,\
+        /api/chair/rides/[0-9A-Z]+/coordinate,\
+        /api/app/rides/[0-9A-Z]+/estimated-fare,\
+        /assets/route-[a-zA-Z0-9]+\.js,\
+        /assets/[a-zA-Z0-9-]+-[a-zA-Z0-9]+\.js,\
+        /assets/[a-zA-Z0-9-]+-[a-zA-Z0-9]+\.css,\
+        /images/[a-zA-Z0-9-]+\.svg,\
+        /images/[a-zA-Z0-9-]+\.png" \
+        --sort {{.SORT_TYPE}} -r
 
 # pprofで記録する
   pprof-record:
