@@ -40,13 +40,12 @@ tasks:
       - task build
 
   restart:
-    dir: go/
     cmds:
       - sudo systemctl restart mysql
       - sudo systemctl restart nginx
 
   build:
-    dir: go/
+    dir: webapp/go/
     cmds:
       - LINUX_TARGET_ENV=GOOS=linux GOARCH=amd64 go build -o {{.SERVICE_BINARY_NAME}}
 
