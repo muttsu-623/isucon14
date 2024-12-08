@@ -6,7 +6,7 @@ vars:
   SERVICE_BINARY_NAME: isuride
   # Alp sort type. 他にavg, countなど.
   SORT_TYPE: '{{.SORT_TYPE | default "max"}}'
-
+  PPROF_FILE: '{{.PPROF_FILE}}'
 tasks:
   install-pt-query-digest:
     cmds:
@@ -105,6 +105,6 @@ tasks:
   pprof-check:
     cmds:
       - latest=$(ls -rt pprof/ | tail -n 1)
-      - go tool pprof -http=localhost:6070 /home/isucon/pprof/pprof.isuride.samples.cpu.001.pb.gz
+      - go tool pprof -http=localhost:6070 {{.PPROF_FILE}}
 
 
